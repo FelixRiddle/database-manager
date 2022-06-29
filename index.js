@@ -22,9 +22,7 @@ module.exports = class DatabaseManager { // Static property
    * @param {function} callback 
    * @returns 
    */
-  connect(url, options = {
-    username: "",
-    password: "",
+  async connect(url, options = {
   }, callback = () => {}) {
     if (typeof (url) === "string") {
       // Check if the url isn't already in
@@ -34,49 +32,61 @@ module.exports = class DatabaseManager { // Static property
         }
       }
 
+      // Connect to redis
+      if (url.startsWith("redis://")) {
+        this.redisClient = Redis.createClient({
+          url
+        });
+        this.redisClient.on("error", (err) => {
+          throw Error(err);
+        });
 
-      // Check if the url exists
-      axios.get(url).then(async (res) => {
-
-        // Get data
-        const data = res.data;
-        let dbName = ""
-
-        // Detect db type
-        if ("couchdb" in data) {
-          // The database is couchdb
-          // Do stuff...
-          dbName = "couchdb"
-
-        } else if (options.username.length >= 1 &&
-          options.password >= 1) {
-          // Try to connect to redis
-          // If the username and the password were provided
-          // Create client with user password and server
-          const redisClient = Redis.createClient({
-            url: `redis://${options.username}:${options.password}@
-              ${url}`
-          });
-          redisClient.on("error", (err) => {});
-
-          await this.redisClient.connect()
-
-          // await client.set('key', 'value');
-          // const value = await client.get('key');
-        }
-
+        await this.redisClient.connect();
         // Insert the db url
         this.dbs = {
           ...this.dbs,
-          [dbName]: {
+          "redis": {
             url,
           },
         };
+        return callback()
+      } else {
+        // Check if the url exists
+        axios.get(url).then((res) => {
 
-        callback();
-      }).catch((err) => {
-        callback();
-      });
+          // Get data
+          const data = res.data;
+          let dbName = ""
+
+          // Detect db type
+          if ("couchdb" in data) {
+            // The database is couchdb
+            // Do stuff...
+            dbName = "couchdb"
+
+          }
+
+          // Insert the db url
+          this.dbs = {
+            ...this.dbs,
+            [dbName]: {
+              url,
+            },
+          };
+
+          return callback();
+        }).catch((err) => {
+          throw Error(err);
+        });
+      }
     }
+  }
+  
+  /**Get a list(object) of the connected databases
+   * 
+   * @returns 
+   */
+  getDatabaseList() {
+    return this.dbs;
   }
 }
