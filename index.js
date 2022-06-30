@@ -1,12 +1,12 @@
-const axios = require("axios").default
-const Redis = require("redis")
+const axios = require("axios").default;
+const Redis = require("redis");
 
 module.exports = class DatabaseManager { // Static property
   redisClient = ""
   dbs = {
     // Example format:
     // [dbName]: {
-    //   dbUrl: "localhost:27000"
+    //   url: "localhost:27000"
     // },
   }
 
@@ -22,8 +22,7 @@ module.exports = class DatabaseManager { // Static property
    * @param {function} callback 
    * @returns 
    */
-  async connect(url, options = {
-  }, callback = () => {}) {
+  async connect(url, options = {}, callback = () => {}) {
     if (typeof (url) === "string") {
       // Check if the url isn't already in
       for (const db in this.dbs) {
@@ -40,8 +39,9 @@ module.exports = class DatabaseManager { // Static property
         this.redisClient.on("error", (err) => {
           throw Error(err);
         });
-
+        
         await this.redisClient.connect();
+        
         // Insert the db url
         this.dbs = {
           ...this.dbs,
@@ -81,7 +81,47 @@ module.exports = class DatabaseManager { // Static property
       }
     }
   }
-  
+
+  /**Tries to parse data
+   * 
+   * @param {*} data 
+   * @returns 
+   */
+  #parseData(data) {
+    if (typeof (data) == "object") {
+      return JSON.stringify(data);
+    }
+    return data;
+  }
+
+  /**
+   * 
+   * @param {*} unparsedData 
+   * @param {*} options 
+   * @param {*} callback 
+   * @returns 
+   */
+  async set(id, unparsedData, options = {}, callback = () => {}) {
+    const data = this.#parseData(unparsedData);
+    const output = {};
+
+    for (let key of Object.keys(this.dbs)) {
+      let url = this.dbs[key]["url"];
+
+      if (key == "couchdb") {
+        output[key] = "";
+      } else if (key == "redis") {
+        output[key] = await this.redisClient.set(id,
+          data,
+        );
+      }
+    }
+
+    return callback({
+      output
+    });
+  }
+
   /**Get a list(object) of the connected databases
    * 
    * @returns 
