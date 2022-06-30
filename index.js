@@ -2,13 +2,14 @@ const axios = require("axios").default;
 const Redis = require("redis");
 
 module.exports = class DatabaseManager { // Static property
-  redisClient = ""
+  dbName = "db-manager";
+  redisClient = "";
   dbs = {
     // Example format:
-    // [dbName]: {
+    // [dbServiceName]: {
     //   url: "localhost:27000"
     // },
-  }
+  };
 
   constructor() {}
 
@@ -39,9 +40,9 @@ module.exports = class DatabaseManager { // Static property
         this.redisClient.on("error", (err) => {
           throw Error(err);
         });
-        
+
         await this.redisClient.connect();
-        
+
         // Insert the db url
         this.dbs = {
           ...this.dbs,
@@ -56,20 +57,27 @@ module.exports = class DatabaseManager { // Static property
 
           // Get data
           const data = res.data;
-          let dbName = ""
+          let dbServiceName = ""
 
           // Detect db type
           if ("couchdb" in data) {
             // The database is couchdb
             // Do stuff...
-            dbName = "couchdb"
+            dbServiceName = "couchdb"
 
+            // Create a db
+            axios
+              .put(`${url}/${this.dbName}`)
+              .then((res) => {})
+              .catch((err) => {
+                // Probably it already exists
+              });
           }
 
           // Insert the db url
           this.dbs = {
             ...this.dbs,
-            [dbName]: {
+            [dbServiceName]: {
               url,
             },
           };
@@ -87,7 +95,7 @@ module.exports = class DatabaseManager { // Static property
    * @param {*} data 
    * @returns 
    */
-  #parseData(data) {
+  #stringify(data) {
     if (typeof (data) == "object") {
       return JSON.stringify(data);
     }
@@ -101,8 +109,8 @@ module.exports = class DatabaseManager { // Static property
    * @param {*} callback 
    * @returns 
    */
-  async set(id, unparsedData, options = {}, callback = () => {}) {
-    const data = this.#parseData(unparsedData);
+  async set(id, normalData, options = {}, callback = () => {}) {
+    const data = this.#stringify(normalData);
     const output = {};
 
     for (let key of Object.keys(this.dbs)) {
