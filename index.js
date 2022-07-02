@@ -6,8 +6,8 @@ module.exports = class DatabaseManager { // Static property
   redisClient = "";
   dbs = {
     // Example format:
-    // [dbServiceName]: {
-    //   url: "localhost:27000"
+    // [url]: {
+    //   dbServiceName: "couchdb"
     // },
   };
 
@@ -46,20 +46,21 @@ module.exports = class DatabaseManager { // Static property
         // Insert the db url
         this.dbs = {
           ...this.dbs,
-          "redis": {
-            url,
+          [url]: {
+            dbServiceName: "redis"
           },
         };
-        return callback()
+        
+        return callback();
       } else {
         // Check if the url exists
-        axios.get(url).then((res) => {
+        await axios.get(url).then((res) => {
 
           // Get data
           const data = res.data;
           let dbServiceName = ""
 
-          // Detect db type
+          // It's couchdb?
           if ("couchdb" in data) {
             // The database is couchdb
             // Do stuff...
@@ -77,8 +78,8 @@ module.exports = class DatabaseManager { // Static property
           // Insert the db url
           this.dbs = {
             ...this.dbs,
-            [dbServiceName]: {
-              url,
+            [url]: {
+              dbServiceName,
             },
           };
 
@@ -113,13 +114,17 @@ module.exports = class DatabaseManager { // Static property
     const data = this.#stringify(normalData);
     const output = {};
 
-    for (let key of Object.keys(this.dbs)) {
-      let url = this.dbs[key]["url"];
+    for (let url of Object.keys(this.dbs)) {
+      let dbServiceName = this.dbs[url]["dbServiceName"];
 
-      if (key == "couchdb") {
-        output[key] = "";
-      } else if (key == "redis") {
-        output[key] = await this.redisClient.set(id,
+      if (dbServiceName == "couchdb") {
+        output[dbServiceName] = await axios.post(`${url}/${this.dbName}`,
+          {
+            _id: id,
+            ...normalData,
+          });
+      } else if (dbServiceName == "redis") {
+        output[dbServiceName] = await this.redisClient.set(id,
           data,
         );
       }
