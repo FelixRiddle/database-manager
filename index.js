@@ -1,5 +1,6 @@
 const axios = require("axios").default;
-const Redis = require("redis");
+// const Redis = require("redis");
+const IORedis = require("ioredis");
 const {
   v4
 } = require("uuid");
@@ -10,7 +11,8 @@ module.exports = class DatabaseManager { // Static property
   dbs = {
     // Example format:
     // [url]: {
-    //   dbServiceName: "couchdb"
+    //   dbServiceName: "couchdb",
+    //   axiosConnection: axios.create(), // Axios instance
     // },
   };
   redisClient = "";
@@ -37,41 +39,51 @@ module.exports = class DatabaseManager { // Static property
    * @returns 
    */
   async connect(url, options = {}, callback = () => {}) {
-    if (typeof (url) === "string") {
-      // Check if the url isn't already in
-      for (const db in this.dbs) {
-        if (url == db) {
-          return
-        }
+    if (typeof (url) !== "string") {
+      // throw new Error("The url is not a string");
+      return;
+    }
+
+    // Check if the url isn't already in
+    for (const db in this.dbs) {
+      if (url == db) {
+        return
       }
+    }
 
-      // Connect to redis
-      if (url.startsWith("redis://")) {
-        this.redisClient = Redis.createClient({
-          url
-        });
-        this.redisClient.on("error", (err) => {
-          throw Error(err);
-        });
+    // Connect to redis
+    if (url.startsWith("redis://")) {
+      // For redis package
+      // this.redisClient = Redis.createClient({
+      //   url
+      // });
+      // this.redisClient.on("error", (err) => {
+      //   throw Error(err);
+      // });
 
-        await this.redisClient.connect();
+      // await this.redisClient.connect();
 
-        // Insert the db url
-        this.dbs = {
-          ...this.dbs,
-          [url]: {
-            dbServiceName: "redis"
-          },
-        };
+      // For ioredis package
+      this.redisClient = new IORedis(url);
 
-        return callback();
-      } else {
-        // Check if the url exists
-        await axios.get(url).then((res) => {
+      // Insert the db url
+      this.dbs = {
+        ...this.dbs,
+        [url]: {
+          dbServiceName: "redis"
+        },
+      };
+
+      return callback();
+    } else {
+      // Check if the url exists
+      await axios.get(url)
+        .then((res) => {
 
           // Get data
           const data = res.data;
-          let dbServiceName = ""
+          let dbServiceName = "";
+          let dbHeaders = {};
 
           // It's couchdb?
           if ("couchdb" in data) {
@@ -80,14 +92,8 @@ module.exports = class DatabaseManager { // Static property
             dbServiceName = "couchdb"
 
             // Create a db
-            axios
-              .put(`${url}/${this.dbName}`)
-              .then((res) => {
-                // console.log(`Database created!`)
-              })
-              .catch((err) => {
-                // Probably it already exists
-              });
+            axios.put(`${url}/${this.dbName}`);
+            dbHeaders["Accept"] = "application/json";
           }
 
           // Insert the db url
@@ -95,14 +101,17 @@ module.exports = class DatabaseManager { // Static property
             ...this.dbs,
             [url]: {
               dbServiceName,
+              axiosConnection: axios.create({
+                baseURL: url,
+                headers: dbHeaders,
+              })
             },
           };
 
           return callback();
         }).catch((err) => {
-          throw Error(err);
+          // throw Error(err);
         });
-      }
     }
   }
 
@@ -132,32 +141,31 @@ module.exports = class DatabaseManager { // Static property
 
     for (let url of Object.keys(this.dbs)) {
       let dbServiceName = this.dbs[url]["dbServiceName"];
-      console.log(dbServiceName)
 
       if (dbServiceName == "couchdb") {
-        output[dbServiceName] = await axios.post(`${url}/${this.dbName}`, {
-          // In case it's possible to use multiple values for
-          // the same thing(like email), replace the original
-          // to point to the new value, and convert this as the
-          // original
-          //_pointsTo: "asdf@gmail.com",
-          ...normalData,
-        });
+        output[dbServiceName] =
+          await axios
+          .post(`${url}/${this.dbName}`, {
+            // In case it's possible to use multiple values for
+            // the same thing(like email), replace the original
+            // to point to the new value, and convert this as the
+            // original
+            //_pointsTo: "asdf@gmail.com",
+            ...normalData,
+          }).catch((err) => {
+            // throw Error(err);
+          });
       } else if (dbServiceName == "redis") {
         const redisKeyword = this.#getQueryString(normalData);
-        console.log(`Rediskeyword: `, redisKeyword["redis"]);
-        console.log(`Its typeof: `, typeof (redisKeyword["redis"]));
-        console.log(`UUIDV4 type: `, typeof (uuidv4()));
-        console.log(`Data type: `, typeof (data));
-
-        // Unsupported Redis Commands
-        // If you want to run commands and / or use
-        // arguments that Node Redis doesn 't know
-        // about(yet!) use.sendCommand():
-        // await client.sendCommand(['SET', 'key', 'value', 'NX']);
-        // 'OK'
+        // node-redis set doesn't accept a key with the
+        // format key1:key2:key3, so this caused a big ass
+        // problem obviously.
+        // console.log(`Rediskeyword: `, redisKeyword["redis"]);
+        // console.log(`Its typeof: `, typeof (redisKeyword["redis"]));
+        // console.log(`UUIDV4 type: `, typeof (uuidv4()));
+        // console.log(`Data type: `, typeof (data));
         output[dbServiceName] =
-          await this.redisClient.sendCommand(["SET", redisKeyword, data]);
+          await redisClient.set(redisKeyword, data);
       }
     }
 
