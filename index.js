@@ -48,63 +48,41 @@ module.exports = class DatabaseManager { // Static property
     return callback();
   }
 
-  /**
+  /** Set data to every connected database
    * 
    * @param {*} queryObject 
    * @returns 
    */
-  async set(queryObject) {
-    const output = {};
+  async set(queryObject, callback = () => {}, options = {}) {
+    for (let db of this.dbs) {
+      db.set(queryObject);
+    }
 
-    return output;
+    if (typeof (callback) === "function")
+      return callback();
+    return;
   }
 
-  // /**
-  //  * 
-  //  * @param {*} unparsedData 
-  //  * @param {*} options 
-  //  * @param {*} callback 
-  //  * @returns 
-  //  */
-  // async set(normalData, options = {}, callback = () => {}) {
-  //   normalData["_id"] = uuidv4();
-  //   const data = this.#stringify(normalData);
-  //   const output = {};
+  /** Get data from every type of connected database
+   * 
+   * @param {*} queryObject 
+   * @param {*} callback 
+   * @param {*} options 
+   * @returns 
+   */
+  async get(queryObject, callback = () => {}, options = {}) {
+    const output = {};
 
-  //   for (let url of Object.keys(this.dbs)) {
-  //     let dbServiceName = this.dbs[url]["dbServiceName"];
+    for (let db of this.dbs) {
+      const unparsedData = await db.get(queryObject);
+      const parsedData = JSON.parse(unparsedData);
+      output[db["name"]] = parsedData;
+    }
 
-  //     if (dbServiceName == "couchdb") {
-  //       output[dbServiceName] =
-  //         await axios
-  //         .post(`${url}/${this.dbName}`, {
-  //           // In case it's possible to use multiple values for
-  //           // the same thing(like email), replace the original
-  //           // to point to the new value, and convert this as the
-  //           // original
-  //           //_pointsTo: "asdf@gmail.com",
-  //           ...normalData,
-  //         }).catch((err) => {
-  //           // throw Error(err);
-  //         });
-  //     } else if (dbServiceName == "redis") {
-  //       const redisKeyword = this.#getQueryString(normalData);
-  //       // node-redis set doesn't accept a key with the
-  //       // format key1:key2:key3, so this caused a big ass
-  //       // problem obviously.
-  //       // console.log(`Rediskeyword: `, redisKeyword["redis"]);
-  //       // console.log(`Its typeof: `, typeof (redisKeyword["redis"]));
-  //       // console.log(`UUIDV4 type: `, typeof (uuidv4()));
-  //       // console.log(`Data type: `, typeof (data));
-  //       output[dbServiceName] =
-  //         await redisClient.set(redisKeyword, data);
-  //     }
-  //   }
-
-  //   return callback({
-  //     output
-  //   });
-  // }
+    if (typeof (callback) === "function")
+      return callback(output);
+    return;
+  }
 
   /**Get a list(array) of the connected databases
    * 
