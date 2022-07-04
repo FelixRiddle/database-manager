@@ -10,6 +10,7 @@ databases are:</br>
 
 # Example use
 
+<code>
     const DatabaseManager = require("./database-manager/index");
     const db = new DatabaseManager("users", ["username", "email"]);
 
@@ -77,3 +78,4 @@ databases are:</br>
         console.error(err);
       }
     })();
+</code>
