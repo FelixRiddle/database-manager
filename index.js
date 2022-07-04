@@ -53,14 +53,10 @@ module.exports = class DatabaseManager { // Static property
    * @param {*} queryObject 
    * @returns 
    */
-  async set(queryObject, callback = () => {}, options = {}) {
+  async set(queryObject) {
     for (let db of this.dbs) {
       db.set(queryObject);
     }
-
-    if (typeof (callback) === "function")
-      return callback();
-    return;
   }
 
   /** Get data from every type of connected database
@@ -70,18 +66,21 @@ module.exports = class DatabaseManager { // Static property
    * @param {*} options 
    * @returns 
    */
-  async get(queryObject, callback = () => {}, options = {}) {
+  async get(queryObject) {
     const output = {};
 
     for (let db of this.dbs) {
-      const unparsedData = await db.get(queryObject);
-      const parsedData = JSON.parse(unparsedData);
-      output[db["name"]] = parsedData;
+      const data = await db.get(queryObject);
+      const dbServiceName = db["name"];
+      if (data && typeof (data) === "string") {
+        const parsedData = JSON.parse(data);
+        output[dbServiceName] = parsedData;
+      } else {
+        output[dbServiceName] = data;
+      }
     }
-
-    if (typeof (callback) === "function")
-      return callback(output);
-    return;
+    
+    return output;
   }
 
   /**Get a list(array) of the connected databases
