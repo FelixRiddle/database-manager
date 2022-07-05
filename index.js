@@ -1,27 +1,42 @@
-const connect = require("./lib/connect");
-// const {
-//   v4
-// } = require("uuid");
-// const uuidv4 = v4;
+const Connection = require("./lib/Connection");
 
 module.exports = class DatabaseManager { // Static property
   dbName = "undefined";
   dbs = [];
-  redisClient = "";
+  connectionsData = {
+    // 1000 * 60 = 1 second
+    // 1000 * 60 * 60 = 1 minute
+    // 1000 * 60 * 60 * 60 = 1 hour
+    // ttl: 1000 * 60 * 60
+  };
   uniqueIdentifierKeys = [];
 
   constructor(dbName, uniqueIdentifierKeys) {
-    // Database name
-    if (dbName && typeof (dbName) === "string") {
-      this.dbName = dbName;
-    }
+    // Load previous connections
+    try {
+      const newDbs = Connection.createDbsByPreviousConnection();
+      
+      if (newDbs) {
+        this.dbs = newDbs;
+      }
+    } catch (err) {
+      console.error(err);
+      // The file doesn't exists, proceed to create it the normal way
+      // Database name
+      if (dbName && typeof (dbName) === "string") {
+        this.dbName = dbName;
+      } else {
+        throw new Error(`Database name not specified`);
+      }
 
-    if (uniqueIdentifierKeys &&
-      uniqueIdentifierKeys.constructor === Array) {
-      // The given var has a corrrect format
-      this.uniqueIdentifierKeys = uniqueIdentifierKeys;
-    } else {
-      throw new Error(`We need unique identifier key name for redis`);
+      // In short: Search keys
+      if (uniqueIdentifierKeys &&
+        uniqueIdentifierKeys.constructor === Array) {
+        // The given var has a corrrect format
+        this.uniqueIdentifierKeys = uniqueIdentifierKeys;
+      } else {
+        throw new Error(`We need unique identifier key names.`);
+      }
     }
   }
 
@@ -41,9 +56,19 @@ module.exports = class DatabaseManager { // Static property
       return;
     }
 
-    const connectionResult = await connect(uri, this.dbName, this.uniqueIdentifierKeys)
+    const connectionResult = await Connection.connect(uri, this.dbName, this.uniqueIdentifierKeys)
       .catch((err) => {});
     this.dbs.push(connectionResult);
+    
+    // Store connection to reconnect elsewhere without
+    // re-entering data
+    this.connectionsData[uri] = {
+      name: connectionResult["name"],
+      uri: connectionResult["uri"],
+      dbName: connectionResult["dbName"],
+      uniqueIdentifierKeys: connectionResult["uniqueIdentifierKeys"],
+    };
+    Connection.saveConnections(this.connectionsData);
 
     return callback();
   }
@@ -79,7 +104,7 @@ module.exports = class DatabaseManager { // Static property
         output[dbServiceName] = data;
       }
     }
-    
+
     return output;
   }
 

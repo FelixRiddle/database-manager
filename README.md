@@ -1,6 +1,6 @@
 # database-manager
 <p>A package that can store data to multiple types of </br>
-database services, for now the **only supported** </br>
+database services, for now the <strong>only supported</strong></br>
 databases are:</br>
 <ul>
   <li>Couchdb</li>
