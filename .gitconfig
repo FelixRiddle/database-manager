@@ -9,6 +9,7 @@
         pushurl = git@github.com:Perseverancia-company/database-manager.git
         pushurl = git@gitlab.com:FelixRiddle/database-manager.git
         pushurl = git@bitbucket.org:fedekiller999/database-manager.git
+	push = HEAD
 [branch "main"]
         remote = origin
         merge = refs/heads/main
