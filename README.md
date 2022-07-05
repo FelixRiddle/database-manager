@@ -55,8 +55,8 @@ const db = new DatabaseManager("users", ["username", "email"]);
 
     // Connect to redis
     const redisProtocol = "redis://"
-    const redisUsername = "fede";
-    const redisPassword = "9b3f682ffb4f85a4f73668829dd26484f7ac64a00ca6b436151fc022ced4cb43";
+    const redisUsername = "felix";
+    const redisPassword = "1d14d2a952c4451dfb00e09f15c4afb86107549e6d385a3371a036bf4d26a5c2";
     const redisIP = "127.0.0.1";
     const redisPort = "6379";
     await db.connect(
