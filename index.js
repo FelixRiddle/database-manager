@@ -1,4 +1,5 @@
 const Connection = require("./lib/Connection");
+const FilesManager = require("./lib/FilesManager");
 
 module.exports = class DatabaseManager { // Static property
   dbName = "undefined";
@@ -14,6 +15,9 @@ module.exports = class DatabaseManager { // Static property
   constructor(dbName, uniqueIdentifierKeys) {
     // Load previous connections
     try {
+      // Create directories
+      FilesManager.createFolders();
+      
       const newDbs = Connection.createDbsByPreviousConnection();
       
       if (newDbs) {

@@ -1,4 +1,4 @@
-data/connection/*
+data/connection/connections.json
 
 # Logs
 logs
