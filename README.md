@@ -78,6 +78,19 @@ const db = new DatabaseManager("users", ["username", "email"]);
   } catch (err) {
     console.error(err);
   }
-})();
+})().then(async () => {
+  console.log(`New database manager instance somewhere else`);
+  const DatabaseManager = require("./database-manager/index");
+  const db = new DatabaseManager();
+  
+  console.log(`Dbs: `, db.dbs)
+  console.log(`Get`);
+  const data_received = await db.get({
+    username: userData["username"],
+    email: userData["email"]
+  });
+  
+  console.log(`Data received: `, data_received);
+});
 ```
 
