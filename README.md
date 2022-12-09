@@ -11,7 +11,7 @@ databases are:</br>
 # Example use
 Import the package and create a new instance, once it has been
 setup you will be able to create a new one anywhere on the project
-without insertind the same data again.
+without inserting the same data again.
 ```javascript
 const DatabaseManager = require("felixriddle.database-manager");
 // The users will be the database name
@@ -25,7 +25,7 @@ Establish a connection to some databases
   try {
     // Connect to couchdb
     await db.connect("http://joefoo:1234@127.0.0.1:5984");
-
+    
     // Connect to redis
     const redisProtocol = "redis://";
     const redisUsername = "joefoo";
