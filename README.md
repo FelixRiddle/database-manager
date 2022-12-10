@@ -23,20 +23,29 @@ Establish a connection to some databases
 ```javascript
 (async () => {
   try {
-    // Connect to couchdb
-    await db.connect("http://joefoo:1234@127.0.0.1:5984");
+		const localhost = "127.0.0.1";
+		
+    // You must create a file called .env and add the fields:
+    // COUCHDB_USERNAME, COUCHDB_PASSWORD, REDIS_USERNAME, REDIS_PASSWORD
+		// Connect to couchdb
+		const couchDbUsername = process.env.COUCHDB_USERNAME;
+		const couchDbPassword = process.env.COUCHDB_PASSWORD;
+		const couchDbPort = process.env.COUCHDB_PORT ? process.env.COUCHDB_PORT : 5984;
+		await db.connect(
+			`http://${couchDbUsername}:${couchDbPassword}@${localhost}:${couchDbPort}`
+		);
     
-    // Connect to redis
-    const redisProtocol = "redis://";
-    const redisUsername = "joefoo";
-    const redisPassword = "1234";
-    const redisIP = "127.0.0.1";
-    const redisPort = "6379";
-    await db.connect(
-      `${redisProtocol}${redisUsername}:${redisPassword}@${redisIP}:${redisPort}`);
+		// Connect to redis
+		const redisProtocol = "redis://";
+		const redisUsername = process.env.REDIS_USERNAME;
+		const redisPassword = process.env.REDIS_PASSWORD;
+		const redisPort = "6379";
+		await db.connect(
+			`${redisProtocol}${redisUsername}:${redisPassword}@${localhost}:${redisPort}`
+		);
     
     //...
-  catch(err) {
+  } catch(err) {
     console.error(err);
   }
 })();
