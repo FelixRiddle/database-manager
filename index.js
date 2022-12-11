@@ -3,7 +3,6 @@
 // sudo apt update && apt upgrade
 // sudo pkexec env DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY gnome-text-editor
 const Connection = require("./lib/Connection");
-const FilesManager = require("./lib/FilesManager");
 
 module.exports = class DatabaseManager {
 	// Static property
@@ -17,34 +16,28 @@ module.exports = class DatabaseManager {
 	};
 	uniqueIdentifierKeys = [];
 
-	constructor(dbName, uniqueIdentifierKeys) {
-		// Load previous connections
-		try {
-			// Create directories
-			FilesManager.createFolders();
-
-			const newDbs = Connection.createDbsByPreviousConnection();
-
-			if (newDbs) {
-				this.dbs = newDbs;
-			}
-		} catch (err) {
-			console.error(err);
-			// The file doesn't exists, proceed to create it the normal way
-			// Database name
-			if (dbName && typeof dbName === "string") {
-				this.dbName = dbName;
-			} else {
-				throw new Error(`Database name not specified`);
-			}
-
-			// In short: Search keys
-			if (uniqueIdentifierKeys && uniqueIdentifierKeys.constructor === Array) {
-				// The given var has a corrrect format
-				this.uniqueIdentifierKeys = uniqueIdentifierKeys;
-			} else {
-				throw new Error(`We need unique identifier key names.`);
-			}
+	constructor(dbName, uniqueIdentifierKeys, debug = false) {
+		this.debug = debug;
+		
+		if (debug) {
+			console.log(`DatabaseManager -> constructor():`);
+			console.log(`DB name: ${dbName}`);
+			console.log(`Unique identifier keys: `, uniqueIdentifierKeys);
+		}
+		
+		// Database name
+		if (dbName && typeof dbName === "string") {
+			this.dbName = dbName;
+		} else {
+			throw new Error(`Database name not specified`);
+		}
+		
+		// In short: Search keys
+		if (uniqueIdentifierKeys && uniqueIdentifierKeys.constructor === Array) {
+			// The given var has a corrrect format
+			this.uniqueIdentifierKeys = uniqueIdentifierKeys;
+		} else {
+			throw new Error(`We need unique identifier key names.`);
 		}
 	}
 
@@ -64,6 +57,7 @@ module.exports = class DatabaseManager {
 			return;
 		}
 
+		console.log(`DatabaseManager -> connect() -> Db name: ${this.dbName}`);
 		const connectionResult = await Connection.connect(
 			uri,
 			this.dbName,
