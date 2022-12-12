@@ -56,8 +56,7 @@ module.exports = class DatabaseManager {
 			// throw new Error("The url is not a string");
 			return;
 		}
-
-		console.log(`DatabaseManager -> connect() -> Db name: ${this.dbName}`);
+		
 		const connectionResult = await Connection.connect(
 			uri,
 			this.dbName,
