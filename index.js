@@ -18,20 +18,20 @@ module.exports = class DatabaseManager {
 
 	constructor(dbName, uniqueIdentifierKeys, debug = false) {
 		this.debug = debug;
-		
+
 		if (debug) {
 			console.log(`DatabaseManager -> constructor():`);
 			console.log(`DB name: ${dbName}`);
 			console.log(`Unique identifier keys: `, uniqueIdentifierKeys);
 		}
-		
+
 		// Database name
 		if (dbName && typeof dbName === "string") {
 			this.dbName = dbName;
 		} else {
 			throw new Error(`Database name not specified`);
 		}
-		
+
 		// In short: Search keys
 		if (uniqueIdentifierKeys && uniqueIdentifierKeys.constructor === Array) {
 			// The given var has a corrrect format
@@ -56,7 +56,7 @@ module.exports = class DatabaseManager {
 			// throw new Error("The url is not a string");
 			return;
 		}
-		
+
 		const connectionResult = await Connection.connect(
 			uri,
 			this.dbName,
@@ -83,9 +83,18 @@ module.exports = class DatabaseManager {
 	 * @returns
 	 */
 	async set(queryObject) {
+		const output = {};
+
 		for (let db of this.dbs) {
-			db.set(queryObject);
+			const dbServiceName = db["name"];
+
+			// Set data in the databases
+			const data = await db.set(queryObject);
+
+			output[dbServiceName] = data;
 		}
+
+		return output;
 	}
 
 	/** Get data from every type of connected database
