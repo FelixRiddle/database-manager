@@ -107,6 +107,17 @@ module.exports = class DatabaseManager {
 	async get(queryObject) {
 		const output = {};
 
+		// The data given must be an object, if not throw an error
+		if (typeof queryObject !== typeof {}) {
+			const newError = new Error(
+				"The query must be an object with the data you want to get!"
+			);
+			if (this.debug) {
+				console.error(newError);
+			}
+			throw newError;
+		}
+
 		for (let db of this.dbs) {
 			const data = await db.get(queryObject);
 			const dbServiceName = db["name"];
