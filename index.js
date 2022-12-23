@@ -131,6 +131,22 @@ module.exports = class DatabaseManager {
 
 		return output;
 	}
+	
+	/**Get the first document it finds
+	 * 
+	 * @param {*} queryObject 
+	 * @returns 
+	 */
+	async getOne(queryObject) {
+		let docs = this.get(queryObject);
+		let theDoc = undefined;
+		for (let doc of docs) {
+			theDoc = doc;
+			break;
+		}
+		
+		return theDoc;
+	}
 
 	/**Get a list(array) of the connected databases
 	 *
